@@ -11,7 +11,7 @@ Ana Luiza do Amaral, Gustavo Baumann, Hisabel Lippel e Julia Izabel
 Nesse projeto após a conclusão dos mockups, recriamos a aplicação, agora estamos conectando o nosso aplicativo a matéria de IOT, para a configuração dos sensores.
 No momento estamos na quarta etapa de nosso projeto, iniciando as aplicações em C++.
 
-Esse repositório contém um sistema de uma ferrovia onde o Administrador pode cadastrar novos usuários e excluílos, porém o usuário não pode cadastrar e excluir demais funcionários, além a capacitação de sensores. É um trabalho para a SA - da matéria de Desenvolvimento de Sistemas + Banco de Dados + IOT.
+Esse repositório contém um sistema de uma ferrovia onde o Administrador pode cadastrar novos usuários e excluílos, porém o usuário não pode cadastrar e excluir demais funcionários, além a capacitação de sensores. É um trabalho para a SA - da matéria de Desenvolvimento de Sistemas + Banco de Dados + IOT + Programação de aplicativos.
 
 ## Funcionalidades
 - Configurar o ESP32 com SSID;
