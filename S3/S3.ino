@@ -1,5 +1,22 @@
+<<<<<<< HEAD
 #include <WiFi.h>
 #include <PubSubClient.h>
+=======
+ #include <WiFi.h>
+
+ const String SSID = "FIESC_IOT_EDU";
+ const String PASS = "8120gv08";
+
+ void setup() {
+  Serial.begin(115200);
+  Serial.println("Conectando ao WiFI");
+  WiFi.begin(SSID,PASS);
+  while(WiFi.status() != WL_CONNECTED){
+    Serial.print(".");
+    delay(200);
+  }
+  Serial.println("\nConectado com sucesso!");
+>>>>>>> 16d3aa6fdfd85ac42ce3bad40cc9bff4a927cc00
 
 WiFiClient client;
 PubSubClient mqtt(client);
