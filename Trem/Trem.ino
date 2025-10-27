@@ -4,13 +4,15 @@
 WiFiClient client;
 PubSubClient mqtt(client);
 
+#define PINO_LED 2
+
 //constantes p/ broker
 const String URL = "test.mosquitto.org";
 const int PORT = 1883;
 const String USR = "";
 const String broker_PASS = "";
-const String Topic = "DSM1";
-
+const String MyTopic = "Ana";
+const String OtherTopic = "Gustavo_sla";
 
 
 const String SSID = "FIESC_IOT_EDU";
@@ -33,17 +35,36 @@ void setup() {
     mqtt.connect(ID.c_str(),USR.c_str(),broker_PASS.c_str());
     Serial.print(".");
     delay(200);
-
   }
+  pinMode(PINO_LED, OUTPUT);
+  mqtt.subscribe(MyTopic.c_str());
+  mqtt.setCallback(callback);
   Serial.println("\nConecxao com sucesso ao broker!");
 }
 
 void loop() {
   String mensagem ="Ana: ";
-  mensagem += "olá";
-
-  mqtt.publish(Topic.c_str(),mensagem.c_str());
+  if(Serial.available()>0){
+    mensagem += Serial.readStringUntil('\n');
+    mqtt.publish(OtherTopic.c_str(),mensagem.c_str());
+  }
   mqtt.loop();
   delay(1000);
 
+}
+
+void callback(char* topic, byte* payload, unsigned int length){
+  String mensagem = "";
+  for(int i = 0; i < length; i++){
+    mensagem += (char)payload[i];//acender led
+  }
+  Serial.print("Recebido: ");
+  Serial.println(mensagem);
+  if(mensagem == "Gustavo: Acender"){
+    digitalWrite(PINO_LED, HIGH);
+  }else if(mensagem == "Gustavo: Apagar"){
+    digitalWrite(PINO_LED, LOW);
+  }else{
+    Serial.println(mensagem);
+  }
 }
