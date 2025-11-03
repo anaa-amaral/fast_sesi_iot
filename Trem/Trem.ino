@@ -7,12 +7,13 @@ PubSubClient mqtt(client);
 #define PINO_LED 2
 
 //constantes p/ broker
-const String URL = "test.mosquitto.org";
-const int PORT = 1883;
+const String URL = "7aecec580ecf4e5cbac2d52b35eb85b9.s1.eu.hivemq.cloud";
+const int PORT = 8883;
 const String USR = "";
-const String broker_PASS = "";
-const String MyTopic = "Ana";
-const String OtherTopic = "Gustavo_sla";
+const String broker_user = "Placa-4-Ana";
+const String broker_PASS = "123456abX";
+const String MyTopic = "";
+const String OtherTopic = "";
 
 
 const String SSID = "FIESC_IOT_EDU";
