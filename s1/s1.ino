@@ -1,75 +1,98 @@
+#include <WiFi.h>
 #include <WiFiClientSecure.h>
 #include <PubSubClient.h>
 
-WiFiClient client;
+WiFiClientSecure client;
 PubSubClient mqtt(client);
 
 #define PINO_LED 2
 
-//constantes p/ broker
-const String URL = "7aecec580ecf4e5cbac2d52b35eb85b9.s1.eu.hivemq.cloud";
-const int PORT = 8883;
-const String USR = "";
-const String broker_user = "Placa-1-Gustavo";
-const String broker_PASS = "123456abX";
+// HiveMQ Cloud
+const char* MQTT_SERVER = "7aecec580ecf4e5cbac2d52b35eb85b9.s1.eu.hivemq.cloud";
+const int MQTT_PORT = 8883;
+const char* MQTT_USER = "Placa-1-Gustavo";
+const char* MQTT_PASS = "123456abX";
 
-const String MyTopic = "Gustavo_sla";
-const String OtherTopic = "Ana";
+// Wi-Fi
+const char* SSID = "FIESC_IOT_EDU";
+const char* WIFI_PASS = "8120gv08";
 
-const String MyTopic = "SA_S1_presenca1";
+// Tópicos MQTT
+const char* TOPICO_UMIDADE = "S1/umidade";
+const char* TOPICO_TEMPERATURA = "S1/temperatura";
+const char* TOPICO_LED = "S1/iluminacao";
 
-const String MyTopic = "SA_S1_servo1";
+void callback(char* topic, byte* payload, unsigned int length) {
+  String mensagem;
+  for (int i = 0; i < length; i++) {
+    mensagem += (char)payload[i];
+  }
+  Serial.print("Recebido no tópico ");
+  Serial.print(topic);
+  Serial.print(": ");
+  Serial.println(mensagem);
 
-const String SSID = "FIESC_IOT_EDU";
-const String PASS = "8120gv08";
+  if (mensagem == "acender") {
+    digitalWrite(PINO_LED, HIGH);
+    Serial.println("LED aceso!");
+  } else if (mensagem == "apagar") {
+    digitalWrite(PINO_LED, LOW);
+    Serial.println("LED apagado!");
+  }
+}
 
 void setup() {
-  pinMode(PINO_LED, OUTPUT); // define pino do LED como saída
+  pinMode(PINO_LED, OUTPUT);
   Serial.begin(115200);
-  Serial.print("Conectado ao Wi-Fi");
-  WiFi.begin(SSID,PASS);
-  while(WiFi.status() != WL_CONNECTED){
-    Serial.print(".");
-    delay(200);
-  }
-  Serial.print("\nConectado com sucesso!");
-  client.setInsecure();
-  Serial.print("Conectando ao broker");
-  mqtt.setServer(URL.c_str(),PORT);
-  while(!mqtt.connected()){
-    String ID = "Trem";
-    ID += String(random(0xffff),HEX);
-    mqtt.connect(ID.c_str(),USR.c_str(),broker_PASS.c_str());
-    Serial.print(".");
-    delay(200);
 
+  Serial.print("Conectando ao Wi-Fi...");
+  WiFi.begin(SSID, WIFI_PASS);
+  while (WiFi.status() != WL_CONNECTED) {
+    Serial.print(".");
+    delay(500);
   }
-  mqtt.subscribe(MyTopic.c_str());
+  Serial.println(" conectado!");
+
+  client.setInsecure(); // sem certificado
+  mqtt.setServer(MQTT_SERVER, MQTT_PORT);
   mqtt.setCallback(callback);
-  Serial.println("\nConecxao com sucesso ao broker!");
+
+  Serial.print("Conectando ao HiveMQ...");
+  while (!mqtt.connected()) {
+    String clientId = "ESP32-S1-";
+    clientId += String(random(0xffff), HEX);
+
+    if (mqtt.connect(clientId.c_str(), MQTT_USER, MQTT_PASS)) {
+      Serial.println(" conectado!");
+    } else {
+      Serial.print(".");
+      delay(1000);
+    }
+  }
+
+  mqtt.subscribe(TOPICO_LED);
+  Serial.println("Assinado no tópico de LED.");
 }
 
 void loop() {
-  String mensagem ="Gustavo: ";
-  if(Serial.available()>0){
-    mensagem += Serial.readStringUntil('\n');
-    mqtt.publish(OtherTopic.c_str(),mensagem.c_str());
+  if (!mqtt.connected()) {
+    mqtt.connect("ESP32-S1", MQTT_USER, MQTT_PASS);
+    mqtt.subscribe(TOPICO_LED);
   }
   mqtt.loop();
-  delay(1000);
 
-}
+  // Publica valores simulados
+  int umidade = random(40, 70);
+  int temperatura = random(20, 30);
 
-void callback(char* topic, byte* payload, unsigned int length){
-  String mensagem = "";
-  for(int i = 0; i < length; i++){
-    mensagem += (char)payload[i];//acender led
-  }
-  Serial.print("Recebido: ");
-  Serial.println(mensagem);
-  if(mensagem == "Ana: Acender"){
-    digitalWrite(PINO_LED, HIGH);
-  }else if (mensagem == "Ana: Apagar"){
-    digitalWrite(PINO_LED, LOW);
-  }
+  String msgUmidade = String(umidade);
+  String msgTemperatura = String(temperatura);
+
+  mqtt.publish(TOPICO_UMIDADE, msgUmidade.c_str());
+  mqtt.publish(TOPICO_TEMPERATURA, msgTemperatura.c_str());
+
+  Serial.println("Publicado:");
+  Serial.println("  Umidade: " + msgUmidade);
+  Serial.println("  Temperatura: " + msgTemperatura);
+  delay(5000);
 }
