@@ -1,73 +1,101 @@
- #include <WiFiClientSecure.h>
- #include<PubSubClient.h>
+#include <WiFi.h>
+#include <WiFiClientSecure.h>
+#include <PubSubClient.h>
 
-WiFiClientSecure client;
-PubSubClient mqtt(client);
-#define PINO_LED 2
+const char* SSID = "FIESC_IOT_EDU";
+const char* PASS = "8120gv08";
 
- const String SSID = "FIESC_IOT_EDU";
- const String PASS = "8120gv08";
+const char* BROKER = "7aecec580ecf4e5cbac2d52b35eb85b9.s1.eu.hivemq.cloud";
+const int PORT = 8883;
 
-const String URL = "7aecec580ecf4e5cbac2d52b35eb85b9.s1.eu.hivemq.cloud";
-const int PORT = 883;
-const String USR = "";
-const String broker_user = "Placa-2-Julia";
-const String broker_PASS = "123456abX";
-const String MyTopic = "";
-const String OtherTopic = "";
+const char* BROKER_USER = "Placa-2-Julia";
+const char* BROKER_PASS = "123456abX";
 
+#define TRIG1 12
+#define ECHO1 25
+#define TRIG2 18
+#define ECHO2 21
+#define PINO_RGB 14
 
+const char* TOPICO_PUBLISH_1 = "Projeto/S2/Distancia1";
+const char* TOPICO_PUBLISH_2 = "Projeto/S2/Distancia2";
+const char* TOPICO_SUBSCRIBE = "Projeto/S2/RGB";
+const char* TOPICO_ENVIO_S3   = "Projeto/S3/Controle";
 
+WiFiClientSecure espClient;
+PubSubClient mqtt(espClient);
 
- void setup() {
-  pinMode(PINO_LED, OUTPUT);
-  Serial.begin(115200);
-  Serial.println("Conectando ao WiFI");
-  WiFi.begin(SSID,PASS);
-  while(WiFi.status() != WL_CONNECTED){
-    Serial.print(".");
-    delay(200);
-  }
-  Serial.println("\nConectado com sucesso!");
-  client.setInsecure();
-  Serial.println("Conectando ao Broker");
-  mqtt.setServer(URL.c_str(),PORT);
-  while(!mqtt.connected()){
-    String ID = "S2_";
-    ID += String(random(0xffff),HEX);
-    mqtt.connect(ID.c_str(), USR.c_str(), Broker_PASS.c_str());
-    Serial.print(".");
-    delay(200);
-  }
-  mqtt.subscribe(MyTopic.c_str());
-  mqtt.setCallback(callback);
-  Serial.println("\nCOnectado com sucesso ao broker!");
-
+long medirDistancia(int trigPin, int echoPin) {
+  digitalWrite(trigPin, LOW);
+  delayMicroseconds(5);
+  digitalWrite(trigPin, HIGH);
+  delayMicroseconds(10);
+  digitalWrite(trigPin, LOW);
+  long duracao = pulseIn(echoPin, HIGH, 30000);
+  long distancia = duracao * 0.034 / 2;
+  return distancia;
 }
 
+void callback(char* topic, byte* payload, unsigned int length) {
+  String mensagem;
+  for (int i = 0; i < length; i++) {
+    mensagem += (char)payload[i];
+  }
+  if (mensagem == "ligar") {
+    digitalWrite(PINO_RGB, HIGH);
+  } else if (mensagem == "desligar") {
+    digitalWrite(PINO_RGB, LOW);
+  }
+}
+
+void conectaWiFi() {
+  WiFi.begin(SSID, PASS);
+  while (WiFi.status() != WL_CONNECTED) {
+    delay(500);
+  }
+}
+
+void conectaMQTT() {
+  mqtt.setServer(BROKER, PORT);
+  mqtt.setCallback(callback);
+  espClient.setInsecure();
+  while (!mqtt.connected()) {
+    String clientId = "S2_" + String(random(0xffff), HEX);
+    if (mqtt.connect(clientId.c_str(), BROKER_USER, BROKER_PASS)) {
+      mqtt.subscribe(TOPICO_SUBSCRIBE);
+    } else {
+      delay(2000);
+    }
+  }
+}
+
+void setup() {
+  Serial.begin(115200);
+  pinMode(TRIG1, OUTPUT);
+  pinMode(ECHO1, INPUT);
+  pinMode(TRIG2, OUTPUT);
+  pinMode(ECHO2, INPUT);
+  pinMode(PINO_RGB, OUTPUT);
+  digitalWrite(PINO_RGB, LOW);
+  conectaWiFi();
+  conectaMQTT();
+}
 
 void loop() {
-  String mensagem = "Julia: ";
-  if (Serial.available()>0){
-    mensagem += Serial.readStringUntil('\n');
-    mqtt.publish(OtherTopic.c_str(), mensagem.c_str());
+  if (!mqtt.connected()) {
+    conectaMQTT();
   }
   mqtt.loop();
-  delay(1000);
-}
-
-void callback (char* topic, byte* payload, unsigned int lenght){
-  String mensagem = "";
-  for(int i = 0 ;i< lenght; i++){
-    mensagem += (char)payload[i];
-
+  long dist1 = medirDistancia(TRIG1, ECHO1);
+  long dist2 = medirDistancia(TRIG2, ECHO2);
+  String msg1 = String(dist1);
+  String msg2 = String(dist2);
+  mqtt.publish(TOPICO_PUBLISH_1, msg1.c_str());
+  mqtt.publish(TOPICO_PUBLISH_2, msg2.c_str());
+  if (dist1 < 10 || dist2 < 10) {
+    mqtt.publish(TOPICO_ENVIO_S3, "objeto_proximo");
+  } else {
+    mqtt.publish(TOPICO_ENVIO_S3, "area_livre");
   }
-  Serial.print("Recebido:");
-  Serial.println(mensagem);
-  if(mensagem == "Hisabel: Acender"){
-    digitalWrite(PINO_LED, HIGH);
-  }else if(mensagem == "Hisabel: Apagar"){
-    digitalWrite(PINO_LED, LOW);
-  }
+  delay(2000);
 }
-
