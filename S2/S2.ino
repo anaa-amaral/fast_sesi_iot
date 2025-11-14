@@ -16,6 +16,7 @@ const char* BROKER_PASS = "123456abX";
 #define TRIG2 18
 #define ECHO2 21
 #define PINO_RGB 14
+#define PINO_LED 4
 
 const char* TOPICO_PUBLISH_1 = "Projeto/S2/Distancia1";
 const char* TOPICO_PUBLISH_2 = "Projeto/S2/Distancia2";
@@ -53,6 +54,7 @@ void conectaWiFi() {
   while (WiFi.status() != WL_CONNECTED) {
     delay(500);
   }
+  Serial.println("Conectado ao WiFi!");
 }
 
 void conectaMQTT() {
@@ -67,6 +69,7 @@ void conectaMQTT() {
       delay(2000);
     }
   }
+  Serial.println("Conectado ao broker!");
 }
 
 void setup() {
@@ -85,17 +88,23 @@ void loop() {
   if (!mqtt.connected()) {
     conectaMQTT();
   }
-  mqtt.loop();
   long dist1 = medirDistancia(TRIG1, ECHO1);
   long dist2 = medirDistancia(TRIG2, ECHO2);
   String msg1 = String(dist1);
   String msg2 = String(dist2);
-  mqtt.publish(TOPICO_PUBLISH_1, msg1.c_str());
-  mqtt.publish(TOPICO_PUBLISH_2, msg2.c_str());
-  if (dist1 < 10 || dist2 < 10) {
+
+  Serial.println(dist1);
+  Serial.println(dist2);
+
+  if (dist1 < 10) {
+    mqtt.publish(TOPICO_PUBLISH_1, "objeto_proximo");
     mqtt.publish(TOPICO_ENVIO_S3, "objeto_proximo");
-  } else {
-    mqtt.publish(TOPICO_ENVIO_S3, "area_livre");
   }
-  delay(2000);
+  if(dist2 < 10) {
+    mqtt.publish(TOPICO_PUBLISH_2, "objeto_proximo");
+    mqtt.publish(TOPICO_ENVIO_S3, "objeto_proximo");
+  }
+  
+  delay(10);
+  mqtt.loop();
 }
