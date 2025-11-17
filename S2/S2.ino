@@ -20,7 +20,7 @@ const char* BROKER_PASS = "123456abX";
 
 const char* TOPICO_PUBLISH_1 = "Projeto/S2/Distancia1";
 const char* TOPICO_PUBLISH_2 = "Projeto/S2/Distancia2";
-const char* TOPICO_SUBSCRIBE = "Projeto/S2/RGB";
+const char* TOPICO_SUBSCRIBE = "S1/iluminacao";
 const char* TOPICO_ENVIO_S3   = "Projeto/S3/Controle";
 
 WiFiClientSecure espClient;
@@ -42,11 +42,12 @@ void callback(char* topic, byte* payload, unsigned int length) {
   for (int i = 0; i < length; i++) {
     mensagem += (char)payload[i];
   }
-  if (mensagem == "ligar") {
-    digitalWrite(PINO_RGB, HIGH);
-  } else if (mensagem == "desligar") {
-    digitalWrite(PINO_RGB, LOW);
+  if (mensagem == "acender") {
+    digitalWrite(PINO_LED, HIGH);
+  } else if (mensagem == "apagar") {
+    digitalWrite(PINO_LED, LOW);
   }
+  Serial.println(mensagem);
 }
 
 void conectaWiFi() {
@@ -78,8 +79,8 @@ void setup() {
   pinMode(ECHO1, INPUT);
   pinMode(TRIG2, OUTPUT);
   pinMode(ECHO2, INPUT);
-  pinMode(PINO_RGB, OUTPUT);
-  digitalWrite(PINO_RGB, LOW);
+  pinMode(PINO_LED, OUTPUT);
+  digitalWrite(PINO_LED, LOW);
   conectaWiFi();
   conectaMQTT();
 }
@@ -100,11 +101,11 @@ void loop() {
     mqtt.publish(TOPICO_PUBLISH_1, "objeto_proximo");
     mqtt.publish(TOPICO_ENVIO_S3, "objeto_proximo");
   }
-  if(dist2 < 10) {
-    mqtt.publish(TOPICO_PUBLISH_2, "objeto_proximo");
-    mqtt.publish(TOPICO_ENVIO_S3, "objeto_proximo");
+  if(dist2 > 10) {
+    mqtt.publish(TOPICO_PUBLISH_2, "objeto_longe");
+    mqtt.publish(TOPICO_ENVIO_S3, "objeto_longe");
   }
   
-  delay(10);
+  delay(1000);
   mqtt.loop();
 }
