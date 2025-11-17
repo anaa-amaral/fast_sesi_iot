@@ -117,7 +117,7 @@ void loop() {
   
   float umidade = dht.readHumidity();
   float temperatura = dht.readTemperature();
-s
+
   Serial.print("Temperatura: ");
   Serial.print(temperatura);
   Serial.println(" °C");
