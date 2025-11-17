@@ -4,14 +4,16 @@
 #include <ESP32Servo.h>
 
 #define PINO_LED 2
-#define TRIG 13
-#define ECHO 12
-#define PINO_SERVO 27
+#define TRIG 26
+#define ECHO 25
+#define PINO_SERVO 19
+#define PINO_SERVO 18
 #define PINO_PRESENCA 14
 
 WiFiClientSecure client;
 PubSubClient mqtt(client);
 Servo servo3;
+Servo servo4;
 
 const char* SSID = "FIESC_IOT_EDU";
 const char* PASS = "8120gv08";
@@ -23,9 +25,10 @@ const char* BROKER_PASS = "123456abX";
 
 const char* TOPIC_PUBLISH_PRESENCA   = "Projeto/S3/Presenca3";
 const char* TOPIC_PUBLISH_OBJETO     = "Projeto/S3/Ultrassom3";
+const char* TOPICO_SUBSCRIBE = "S1/iluminacao";
 
-
-const char* TOPIC_SUBSCRIBE_COMANDOS = "Projeto/S3/Controle";
+const char* TOPIC_PUBLISH_1 = "Projeto/S2/Distancia1";
+const char* TOPIC_PUBLISH_2 = "Projeto/S2/Distancia2";
 
 unsigned long lastPublish = 0;
 int publishInterval = 3000;
@@ -43,15 +46,29 @@ long medirDistancia(int trigPin, int echoPin) {
 }
 
 void callback(char* topic, byte* payload, unsigned int length) {
-  String msg = "";
-  for (unsigned int i = 0; i < length; i++) msg += (char)payload[i];
-
-  Serial.print("Comando recebido: ");
-  Serial.println(msg);
-
-  if (msg == "Acender") digitalWrite(PINO_LED, HIGH);
-  else if (msg == "Apagar") digitalWrite(PINO_LED, LOW);
-  else if (msg == "objeto_proximo") servo3.write(90);
+  String mensagem;
+  for (int i = 0; i < length; i++) {
+    mensagem += (char)payload[i];
+  }
+  if (mensagem == "acender") {
+    digitalWrite(PINO_LED, HIGH);
+  } else if (mensagem == "apagar") {
+    digitalWrite(PINO_LED, LOW);
+  } else if (String(topic) == TOPIC_PUBLISH_1){
+    if (mensagem == "objeto_proximo"){
+      servo3.write(90);
+    } else if (mensagem == "objeto_longe"){
+      servo3.write(45);
+    } else if (String(topic) ==TOPIC_PUBLISH_2){
+      if (mensagem == "objeto_proximo"){
+        servo4.write(90);
+      } else if (mensagem == "objeto_longe"){
+        servo4.write(45);
+      }
+    }
+    
+  }
+  Serial.println(mensagem);
 }
 
 void conectarWiFi() {
@@ -78,9 +95,13 @@ void conectarMQTT() {
     if (mqtt.connect(clientId.c_str(), BROKER_USER, BROKER_PASS)) {
       Serial.println("Conectado!");
 
-      mqtt.subscribe(TOPIC_SUBSCRIBE_COMANDOS);
+      mqtt.subscribe(TOPICO_SUBSCRIBE);
+      mqtt.subscribe(TOPIC_PUBLISH_1);  // recebe sensor 1 da S2
+      mqtt.subscribe(TOPIC_PUBLISH_2);  // recebe sensor 2 da S2
+      mqtt.subscribe("Projeto/S3/Controle");  // recebe comandos da S2
+
       Serial.print("Subscrito em: ");
-      Serial.println(TOPIC_SUBSCRIBE_COMANDOS);
+      Serial.println(TOPICO_SUBSCRIBE);
 
     } else {
       Serial.print("Falha. Código: ");
@@ -108,21 +129,18 @@ void setup() {
 void loop() {
   if (!mqtt.connected()) conectarMQTT();
   mqtt.loop();
-
   long distancia = medirDistancia(TRIG, ECHO);
   Serial.println(distancia);
-
   if (distancia > 0 && distancia < 10) {
-    mqtt.publish(TOPIC_PUBLISH_OBJETO, "objeto_proximo");
+    mqtt.publish(TOPIC_PUBLISH_1, "objeto_proximo");
+  } else if (distancia > 10) {
+    mqtt.publish(TOPIC_PUBLISH_2, "objeto_longe");
   }
-
   unsigned long agora = millis();
   if (agora - lastPublish >= publishInterval) {
     lastPublish = agora;
-
     int presenca = digitalRead(PINO_PRESENCA);
     mqtt.publish(TOPIC_PUBLISH_PRESENCA, String(presenca).c_str());
-
     Serial.print("Presença publicada: ");
     Serial.println(presenca);
   }
