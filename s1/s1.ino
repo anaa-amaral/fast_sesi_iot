@@ -87,6 +87,7 @@ void setup() {
 
   client.setInsecure();
   mqtt.setServer(MQTT_SERVER, MQTT_PORT);
+  mqtt.subscribe(TOPICO_LED);
   mqtt.setCallback(callback);
   conectaMQTT();
 }
