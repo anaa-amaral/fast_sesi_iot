@@ -30,9 +30,12 @@ const char* BROKER_PASS = "123456abX";
 // -------------------- TÓPICOS MQTT --------------------
 const char* TOPIC_PUBLISH_PRESENCA   = "Projeto/S3/Presenca3";
 const char* TOPIC_PUBLISH_OBJETO     = "Projeto/S3/Ultrassom3";
-const char* TOPIC_PUBLISH_1 = "Projeto/S2/Distancia1";
-const char* TOPIC_PUBLISH_2 = "Projeto/S2/Distancia2";
 
+// *** Tópicos recebidos da S2 ***
+const char* TOPIC_PUBLISH_1 = "Projeto/S2/Distancia1";  // controla servo3
+const char* TOPIC_PUBLISH_2 = "Projeto/S2/Distancia2";  // controla servo4
+
+// *** Tópico vindo da S1 ***
 const char* TOPICO_SUBSCRIBE = "S1/iluminacao";
 
 // -------------------- CONTROLE DE PUBLICAÇÃO --------------------
@@ -99,7 +102,7 @@ void conectarWiFi() {
 
 // -------------------- CONEXÃO COM BROKER MQTT --------------------
 void conectarMQTT() {
-  mqtt.setServer(BROKER_URL, BROKER_PORT);
+ mqtt.setServer(BROKER_URL, BROKER_PORT);
  client.setInsecure();                // ignora certificado (requerido em alguns brokers)
  mqtt.setCallback(callback);          // registra função callback
 
@@ -117,11 +120,6 @@ void conectarMQTT() {
       mqtt.subscribe(TOPICO_SUBSCRIBE);         // LED
       mqtt.subscribe(TOPIC_PUBLISH_1);          // servo3
       mqtt.subscribe(TOPIC_PUBLISH_2);          // servo4
-      mqtt.subscribe("Projeto/S3/Controle");    // comandos gerais
-
-
-      Serial.print("Subscrito em: ");
-      Serial.println(TOPICO_SUBSCRIBE);
 
     } else {
       Serial.print("Falha. Código: ");
