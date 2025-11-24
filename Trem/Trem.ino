@@ -1,3 +1,6 @@
+//Receber informações de velocidade enviadas por outro dispositivo
+//Interpretar esses dados e converter em ações físicas
+
 #include <WiFi.h>
 #include <WiFiClientSecure.h>
 #include <PubSubClient.h>
@@ -5,17 +8,18 @@
 WiFiClientSecure client;
 PubSubClient mqtt(client);
 
+// Atuadores
 #define LED_VERMELHO 23
 #define LED_VERDE 22
 
-//constantes p/ broker
+//constantes p/ broker e conexão
 const String URL = "7aecec580ecf4e5cbac2d52b35eb85b9.s1.eu.hivemq.cloud";
 const int PORT = 8883;
 const String broker_user = "Placa-4-Ana";
 const String broker_PASS = "123456abX";
-const String MyTopic = "projeto/trem/velocidade";
+const String MyTopic = "projeto/trem/velocidade"; // Tópico utilizado ( números inteiros )
 
-
+// Conexão ao Wi-Fi
 const String SSID = "FIESC_IOT_EDU";
 const String PASS = "8120gv08";
 
@@ -46,6 +50,7 @@ void setup() {
 }
 
 void loop() {
+  // leitura da mensagem
   if(Serial.available()>0){
     String mensagem = Serial.readStringUntil('\n');
     mqtt.publish(MyTopic.c_str(),mensagem.c_str());
@@ -62,8 +67,9 @@ void callback(char* topic, byte* payload, unsigned int length){
   }
   Serial.print("Recebido: ");
   Serial.println(mensagem);
-  int val = mensagem.toInt();
-  if(val0 > 0){
+  int val = mensagem.toInt(); 
+  // Controle dos atuadores:
+  if(val > 0){
     digitalWrite(LED_VERDE, HIGH);
     digitalWrite(LED_VERMELHO, LOW);
   }else if(val < 0){
