@@ -8,8 +8,8 @@
 #define TRIG 26
 #define ECHO 25
 #define PINO_SERVO3 19       // Servo 3
-#define PINO_SERVO4 18       // Servo 4
-#define PINO_PRESENCA 14
+#define PINO_SERVO4 21       // Servo 4
+
 
 // -------------------- OBJETOS MQTT E SERVO --------------------
 WiFiClientSecure client;
@@ -28,9 +28,6 @@ const char* BROKER_USER = "Placa-3-Hisabel";
 const char* BROKER_PASS = "123456abX";
 
 // -------------------- TÓPICOS MQTT --------------------
-const char* TOPIC_PUBLISH_PRESENCA   = "Projeto/S3/Presenca3";
-const char* TOPIC_PUBLISH_OBJETO     = "Projeto/S3/Ultrassom3";
-
 // *** Tópicos recebidos da S2 ***
 const char* TOPIC_PUBLISH_1 = "Projeto/S2/Distancia1";  // controla servo3
 const char* TOPIC_PUBLISH_2 = "Projeto/S2/Distancia2";  // controla servo4
@@ -135,7 +132,6 @@ void setup() {
 
   // Configuração de pinos
   pinMode(PINO_LED, OUTPUT);
-  pinMode(PINO_PRESENCA, INPUT);
   pinMode(TRIG, OUTPUT);
   pinMode(ECHO, INPUT);
 
@@ -144,7 +140,6 @@ void setup() {
 
   servo3.write(0);
   servo4.write(0);
-
 
    conectarWiFi();       // conecta ao Wi-Fi
    conectarMQTT();       // conecta ao broker MQTT
@@ -168,15 +163,5 @@ void loop() {
     mqtt.publish(TOPIC_PUBLISH_2, "objeto_longe");
   }
 
-  // ---------- ENVIO PERIÓDICO DA PRESENÇA (a cada 3s) ----------
-  unsigned long agora = millis();
-  if (agora - lastPublish >= publishInterval) {
-    lastPublish = agora;
-    int presenca = digitalRead(PINO_PRESENCA);
-    mqtt.publish(TOPIC_PUBLISH_PRESENCA, String(presenca).c_str());
-    Serial.print("Presença publicada: ");
-    Serial.println(presenca);
-  }
-
-  delay(20);   // pequeno delay para estabilidade de leitura
+  delay(200);   // pequeno delay para estabilidade de leitura
 }
